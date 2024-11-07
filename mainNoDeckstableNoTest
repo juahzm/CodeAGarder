@@ -1,0 +1,282 @@
+// @ts-ignore
+import { expect, test } from "https://maxime-pigeon.github.io/t/test.js";
+
+/**Definir des constantes dans la porte global */
+
+// const as = 11, valets = 10, dames = 10, rois = 10; /*sorte*/
+const heart = 1, diamont = 2, club = 3, spade = 4; /*enseigne*/
+
+type carte = { sorte: number, enseigne: number };
+
+/*Creer un paquet des cartes*/
+
+type paquet = carte[];
+
+
+function unpaquetcartes(): paquet {
+    let tableau_cartes: carte[] = [];
+    for (let enseigne = 1; enseigne <= 4; enseigne++) {
+        for (let sorte = 1; sorte <= 13; sorte++) {
+            tableau_cartes.push({ sorte, enseigne });
+
+        }
+    };
+    return tableau_cartes;
+
+};
+
+/*Creer un paquet des cartes avec le pointage correcte*/
+
+function unpaquetcartespointage(): paquet {
+
+    let tableau_cartespointage = unpaquetcartes();
+    tableau_cartespointage.forEach(carte => {
+        if (carte.sorte === 13 || carte.sorte === 12 || carte.sorte === 11) { carte.sorte = 10; }
+        if (carte.sorte === 1) { carte.sorte = 11; }
+    });
+    return tableau_cartespointage;
+}
+
+//Une function pour avoir un idex entre 0 et 51//
+
+function randomindexpaquet(): number {
+
+    const paquet = unpaquetcartespointage()
+    const min = 0;
+    const max = paquet.length - 1;
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled);
+}
+
+
+
+//Une function qui melange le paquet en utilisant swap et l'index de la function randonindexpaquet //
+function paquetMelange(): paquet {
+
+    let paquet = unpaquetcartespointage();
+    for (let i = paquet.length - 1; i >= 0; i--) {
+
+        const frontIndex = randomindexpaquet();
+        const backIndex = i;
+        paquet[frontIndex] = paquet[backIndex];
+        paquet[backIndex] = paquet[frontIndex];
+    }
+
+    return paquet;
+}
+
+
+
+type etat = { paquetcartes: paquet; jouer: carte[], banque: carte[] };
+
+function nouveauEtatDelapartie(paquet: paquet, jouer: carte[], banque: carte[]): etat {
+    return { paquetcartes: paquet, jouer: jouer, banque: banque };
+};
+
+// function paquetCongele(): paquet {
+
+//     const paquetOrigin = paquetMelange();
+//     const paquetStable: paquet = [];
+//     for (const carte of paquetOrigin) {
+
+//         paquetStable.push(carte);
+//     }
+
+//     return paquetStable;
+// };
+
+// console.log(paquetCongele());
+
+
+function donnercarte(): etat {
+    const etat = nouveauEtatDelapartie(paquetMelange(), [], []);
+    etat.paquetcartes = etat.paquetcartes.slice(1);
+    const card = etat.paquetcartes[0];
+    etat.jouer = etat.jouer.concat(card);
+    return etat;
+
+
+};
+
+
+
+
+function donnerDeuxiemecarte(): etat {
+
+    const etat = donnercarte();
+    etat.paquetcartes = etat.paquetcartes.slice(2);
+    const card = etat.paquetcartes[1];
+    etat.jouer = etat.jouer.concat(card);
+    return etat;
+
+};
+
+
+
+function donnerCarte1banque(): etat {
+    const etat = donnerDeuxiemecarte();
+    etat.paquetcartes = etat.paquetcartes.slice(3);
+    const card = etat.paquetcartes[2];
+    etat.banque = etat.banque.concat(card);
+    return etat;
+};
+
+
+
+
+function donnerCarte2banque(): etat {
+    const etat = donnerCarte1banque();
+    etat.paquetcartes = etat.paquetcartes.slice(4);
+    const card = etat.paquetcartes[3];
+    etat.banque = etat.banque.concat(card);
+    return etat;
+};
+
+
+
+function valeurMainjoueur(): number {
+
+    const etat = donnerCarte2banque();
+    let total = 0;
+    for (const carte of etat.jouer) {
+        total += carte.sorte;
+    }
+    return total;
+
+};
+
+
+
+function valeurMainbanque(): number {
+
+    const etat = donnerCarte2banque();
+    let total = 0;
+    for (const carte of etat.banque) {
+        total += carte.sorte;
+    }
+    return total;
+
+};
+
+
+
+function quiGagne(): string {
+
+    let pointageJoueur = valeurMainjoueur();
+    let pointageBanque = valeurMainbanque();
+
+    if (pointageJoueur > 21) { return `le pointage de joueur est: ${valeurMainjoueur()}: Le pointage de la banque est: ${valeurMainbanque()}. \n La banque gagne avec ${pointageBanque} points.`; }
+    if (pointageBanque > 21) { return ` le pointage de joueur est: ${valeurMainjoueur()}: Le pointage de la banque est: ${valeurMainbanque()}.\n Le joueur gagne avec ${pointageJoueur} points.`; }
+
+    if (pointageJoueur > pointageBanque) { return `le pointage de joueur est: ${valeurMainjoueur()}: Le pointage de la banque est: ${valeurMainbanque()}. \n Le gagant est le joueur avec  ${pointageJoueur} points`; }
+    else if (pointageJoueur < pointageBanque) { return `le pointage de joueur est: ${valeurMainjoueur()}: Le pointage de la banque est: ${valeurMainbanque()}. \n La banque gagne avec ${pointageBanque} points.`; }
+    else { return `le pointage de joueur est: ${valeurMainjoueur()}: Le pointage de la banque est: ${valeurMainbanque()}. \n C'est une égalité avec ${pointageJoueur} points` }
+};
+
+
+function quellecartejoueur1(): string {
+    const etat = donnerCarte2banque();
+    let answer = "";
+    for (const carte of etat.jouer) {
+        let sorte = String(carte.sorte);
+        if (carte.sorte === 1) sorte = "As";
+        if (carte.sorte === 11) sorte = "Valets";
+        if (carte.sorte === 12) sorte = "Dames";
+        if (carte.sorte === 13) sorte = "Rois";
+        let enseigne = "";
+        if (carte.enseigne === heart) enseigne = "Coeur";
+        if (carte.enseigne === diamont) enseigne = "Carreau";
+        if (carte.enseigne === club) enseigne = "Trèfle";
+        if (carte.enseigne === spade) enseigne = "Pique";
+        answer = `une ${sorte} de ${enseigne}`;
+    }
+    return answer;
+};
+
+
+function quellecartejoueur2(): string {
+    const etat = donnerCarte2banque();
+    let answer = "";
+    for (const carte of etat.jouer) {
+        let sorte = String(carte.sorte);
+        if (carte.sorte === 1) sorte = "As";
+        if (carte.sorte === 11) sorte = "Valets";
+        if (carte.sorte === 12) sorte = "Dames";
+        if (carte.sorte === 13) sorte = "Rois";
+        let enseigne = "";
+        if (carte.enseigne === heart) enseigne = "Coeur";
+        if (carte.enseigne === diamont) enseigne = "Carreau";
+        if (carte.enseigne === club) enseigne = "Trèfle";
+        if (carte.enseigne === spade) enseigne = "Pique";
+        answer = `une ${sorte} de ${enseigne}`;
+    }
+    return answer;
+};
+
+
+function main(): void {
+
+    let continuer = true;
+
+    while (continuer) {
+        const p = prompt("Tapez cartes pour demander deux cartes.");
+        const card1 = quellecartejoueur1();
+        const card2 = quellecartejoueur2();
+        if (p === "cartes") {
+            continuer = false;
+        }
+        console.log(`voici vos cartes", ${card1} et ${card2} `);
+
+
+    };
+    console.log(quiGagne());
+}
+
+console.log(main());
+
+
+
+//function pour tester le numero de cartes//
+
+
+// function compterCartescartes(): number {
+//     let total = 0;
+//     for (let i = donnerCarte2banque().paquetcartes.length - 1; i >= 0; i--) {
+//         total++;
+//     }
+//     return total;
+// };
+// console.log(compterCartesMelanges());
+
+
+type etatx = { balance: number };
+
+function deposit(etat: etatx, amount: number): etatx {
+    return { balance: etat.balance + amount };
+};
+
+let etatActuelle = { balance: 100 };
+etatActuelle = deposit(etatActuelle, 200);
+etatActuelle = deposit(etatActuelle, 700);
+console.log(etatActuelle);
+
+
+// function compterCartescartes1(): number {
+//     let total = 0;
+//     for (let i = donnercarte(etatactuel).paquetcartes.length - 1; i >= 0; i--) {
+//         total++;
+//     }
+//     return total;
+// };
+// console.log(compterCartescartes1());
+
+
+// function compterCartescartes2(): number {
+//     let total = 0;
+//     for (let i = donnerDeuxiemecarte(etatactuel).paquetcartes.length - 1; i >= 0; i--) {
+//         total++;
+//     }
+//     return total;
+// };
+// console.log(compterCartescartes2());
